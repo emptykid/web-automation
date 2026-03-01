@@ -1,0 +1,52 @@
+{
+  "name": "web-automation",
+  "version": "1.0.0",
+  "description": "知乎自动化操作工具，基于 Playwright",
+  "main": "dist/src/index.js",
+  "types": "dist/src/index.d.ts",
+  "bin": {
+    "zhihu-search": "bin/zhihu-search.js",
+    "zhihu-answer": "bin/zhihu-answer.js",
+    "zhihu-waiting": "bin/zhihu-waiting.js",
+    "zhihu-save-session": "bin/zhihu-save-session.js",
+    "zhidao-save-session": "bin/zhidao-save-session.js",
+    "zhidao-search": "bin/zhidao-search.js",
+    "zhidao-answer": "bin/zhidao-answer.js",
+    "zhidao-ask": "bin/zhidao-ask.js",
+    "zhidao-inspect-ask": "bin/zhidao-inspect-ask.js",
+    "zhidao-recommendquestion": "bin/zhidao-recommendquestion.js"
+  },
+  "files": [
+    "dist/",
+    "bin/",
+    ".env.example",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "prepublishOnly": "npm run build",
+    "dev": "ts-node",
+    "zhihu:login": "ts-node scripts/zhihu/run-login.ts",
+    "zhihu:search": "ts-node scripts/zhihu/run-search.ts",
+    "zhihu:answer": "ts-node scripts/zhihu/run-answer.ts",
+    "zhihu:waiting": "ts-node scripts/zhihu/run-waiting.ts",
+    "zhihu:save-session": "ts-node scripts/zhihu/save-session.ts",
+    "zhihu:article": "ts-node scripts/zhihu/run-article.ts",
+    "zhidao:save-session": "ts-node scripts/zhidao/save-session.ts",
+    "zhidao:search": "ts-node scripts/zhidao/run-search.ts",
+    "zhidao:answer": "ts-node scripts/zhidao/run-answer.ts",
+    "zhidao:ask": "ts-node scripts/zhidao/run-ask.ts",
+    "zhidao:inspect-ask": "ts-node scripts/zhidao/inspect-ask.ts",
+    "zhidao:recommendquestion": "ts-node scripts/zhidao/run-recommendquestion.ts"
+  },
+  "keywords": ["zhihu", "playwright", "automation"],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@types/node": "^25.3.1",
+    "dotenv": "^17.3.1",
+    "playwright": "^1.58.2",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3"
+  }
+}
