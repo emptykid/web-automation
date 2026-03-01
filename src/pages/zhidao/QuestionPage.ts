@@ -62,19 +62,26 @@ export class QuestionPage extends BasePage {
   async clickAnswerButton(): Promise<boolean> {
     console.log('[QuestionPage] 点击「我来回答」按钮...');
 
-    // 尝试多种选择器
+    // 尝试多种选择器（#answer-bar 是知道现代页面的实际 ID）
     const btnSelectors = [
+      '#answer-bar',
       'a.btn-answer',
       '.btn-answer',
       'a:has-text("我来回答")',
       'button:has-text("我来回答")',
+      'a:has-text("我来答")',
+      'button:has-text("我来答")',
+      '.wgt-header-title-btn',
+      'span:has-text("我来答")',
+      'span:has-text("我来回答")',
       '.question-operation a:first-child',
     ];
 
     for (const sel of btnSelectors) {
       if (await this.exists(sel, 2000)) {
         await this.page.click(sel);
-        await this.randomDelay(1000, 2000);
+        // 给编辑器足够时间渲染（知道页面有时需要 2-3s）
+        await this.randomDelay(2000, 3000);
         console.log('[QuestionPage] 已点击「我来回答」');
         return true;
       }
@@ -91,17 +98,22 @@ export class QuestionPage extends BasePage {
   async typeAnswer(content: string): Promise<void> {
     console.log('[QuestionPage] 输入回答内容...');
 
-    await this.page.waitForTimeout(1000);
+    // 额外等待，确保点击按钮后编辑区完全渲染
+    await this.page.waitForTimeout(2000);
 
-    // 优先尝试 contenteditable 编辑器
+    // 优先尝试 contenteditable 编辑器（包含知道现代页面常见选择器）
     const contentEditableSelectors = [
       '#ueditor_0 [contenteditable="true"]',
       '.edui-editor-body[contenteditable="true"]',
+      '.write-answer [contenteditable="true"]',
+      '.new-preedit [contenteditable="true"]',
+      '.answer-editor [contenteditable="true"]',
+      '.edit-area [contenteditable="true"]',
       '[contenteditable="true"]',
     ];
 
     for (const sel of contentEditableSelectors) {
-      if (await this.exists(sel, 2000)) {
+      if (await this.exists(sel, 5000)) {
         await this.page.click(sel);
         await this.randomDelay(300, 500);
         await this.page.evaluate((text: string) => {
@@ -117,6 +129,41 @@ export class QuestionPage extends BasePage {
       }
     }
 
+    // contenteditable 位于 iframe（如 UEditor）
+    const iframeSelectors = [
+      'iframe[id^="ueditor"]',
+      'iframe.edui-editor-iframe',
+      '#ueditor_0',
+    ];
+
+    for (const sel of iframeSelectors) {
+      const handle = await this.page.$(sel);
+      if (!handle) continue;
+      const frame = await handle.contentFrame();
+      if (!frame) continue;
+
+      await frame.waitForTimeout(200);
+      const filled = await frame.evaluate((text: string) => {
+        const editable = document.querySelector('[contenteditable="true"]') as HTMLElement | null;
+        const target = editable ?? document.body;
+        if (!target) return false;
+        target.focus();
+        target.innerHTML = '';
+        target.textContent = text;
+        const inputEvent = typeof InputEvent !== 'undefined'
+          ? new InputEvent('input', { bubbles: true, cancelable: true })
+          : new Event('input', { bubbles: true, cancelable: true });
+        target.dispatchEvent(inputEvent);
+        return true;
+      }, content).catch(() => false);
+
+      if (filled) {
+        await this.randomDelay(500, 800);
+        console.log('[QuestionPage] 已通过 iframe 编辑器输入回答');
+        return;
+      }
+    }
+
     // 降级：textarea
     const textareaSelectors = [
       '#question-content',
@@ -125,13 +172,29 @@ export class QuestionPage extends BasePage {
       'textarea',
     ];
     for (const sel of textareaSelectors) {
-      if (await this.exists(sel, 2000)) {
+      if (await this.exists(sel, 5000)) {
         await this.page.fill(sel, content);
         await this.randomDelay(300, 500);
         console.log('[QuestionPage] 已通过 fill 输入回答（textarea）');
         return;
       }
     }
+
+    // 调试：截图 + 输出页面中所有 contenteditable 元素，帮助定位实际选择器
+    const debugInfo = await this.page.evaluate(() => {
+      const items = Array.from(document.querySelectorAll('[contenteditable]'));
+      return items.map(el => ({
+        tag: el.tagName,
+        id: el.id,
+        className: el.className,
+        contenteditable: el.getAttribute('contenteditable'),
+      }));
+    });
+    console.error('[QuestionPage] 调试 - 页面中的 contenteditable 元素:', JSON.stringify(debugInfo, null, 2));
+
+    const screenshotPath = `/tmp/zhidao-editor-debug-${Date.now()}.png`;
+    await this.page.screenshot({ path: screenshotPath, fullPage: false });
+    console.error(`[QuestionPage] 已截图至: ${screenshotPath}`);
 
     throw new Error('[QuestionPage] 未找到回答编辑器，无法输入内容');
   }
@@ -144,8 +207,10 @@ export class QuestionPage extends BasePage {
     await this.randomDelay(1000, 2000);
 
     const submitSelectors = [
+      '.new-editor-deliver-btn',
       'input[type="submit"][value*="提交"]',
       'button:has-text("提交回答")',
+      'a:has-text("提交回答")',
       '.btn-submit',
       'input.submit-btn',
       'button.submit',
@@ -191,9 +256,22 @@ export class QuestionPage extends BasePage {
   }
 
   /**
-   * 完整流程：点击「我来回答」→ 输入内容 → 提交
+   * 检查当前问题是否已经回答过（页面存在「我的回答」区块）
    */
-  async writeAndSubmitAnswer(content: string): Promise<boolean> {
+  async hasAlreadyAnswered(): Promise<boolean> {
+    return await this.exists('.answer-mine', 3000);
+  }
+
+  /**
+   * 完整流程：点击「我来回答」→ 输入内容 → 提交
+   * 若已回答过则跳过，返回 null 表示跳过、true/false 表示提交结果
+   */
+  async writeAndSubmitAnswer(content: string): Promise<boolean | null> {
+    if (await this.hasAlreadyAnswered()) {
+      console.log('[QuestionPage] 检测到「我的回答」，该问题已回答过，跳过');
+      return null;
+    }
+
     const clicked = await this.clickAnswerButton();
     if (!clicked) return false;
 

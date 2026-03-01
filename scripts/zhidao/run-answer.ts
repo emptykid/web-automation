@@ -121,7 +121,9 @@ async function main() {
     } else {
       console.log('\n✍️  开始撰写并提交回答...');
       const success = await questionPage.writeAndSubmitAnswer(content);
-      if (success) {
+      if (success === null) {
+        console.log('\n⏭️  该问题已回答过，跳过');
+      } else if (success) {
         console.log('\n🎉 回答提交成功！');
       } else {
         console.error('\n❌ 回答提交失败，请手动检查浏览器状态');
