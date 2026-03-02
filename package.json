@@ -8,6 +8,7 @@
     "zhihu-search": "bin/zhihu-search.js",
     "zhihu-answer": "bin/zhihu-answer.js",
     "zhihu-waiting": "bin/zhihu-waiting.js",
+    "zhihu-article": "bin/zhihu-article.js",
     "zhihu-ask": "bin/zhihu-ask.js",
     "zhihu-follow": "bin/zhihu-follow.js",
     "zhihu-comment": "bin/zhihu-comment.js",
