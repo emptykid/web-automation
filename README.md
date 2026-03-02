@@ -9,7 +9,7 @@
 [![Playwright](https://img.shields.io/badge/Playwright-1.58-2EAD33?logo=playwright&logoColor=white)](https://playwright.dev/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-*搜索问题 · 发布回答 · 发布文章 · 等你来答 · 提问 · Session 持久化*
+*搜索 · 回答 · 提问 · 评论 · 赞同 · 关注 · 发布文章 · Session 持久化*
 
 </div>
 
@@ -23,6 +23,10 @@
 - ✍️ **自动回答** — 通过 URL 或关键词定位问题并发布回答，支持插入图片素材
 - 📝 **发布文章** — 自动填写标题、正文，在指定位置插入图片，上传封面，一键发布专栏文章
 - 📋 **等你来答** — 获取推荐 / 邀请 / 最新 / 热门问题列表
+- ❓ **发起提问** — 在知乎提问，支持填写题目说明（选填），一键发布
+- 👥 **关注 / 取消关注** — 通过用户 URL ID 关注或取消关注指定用户
+- 💬 **评论回答** — 打开指定回答，展开评论区，输入内容并发布
+- 👍 **赞同回答** — 打开指定回答，点击赞同按钮，自动检测是否已赞同
 
 ### 百度知道（zhidao.baidu.com）
 
@@ -328,6 +332,124 @@ npm run zhihu:waiting -- --type hot --count 20
 
 ---
 
+### ❓ 知乎提问
+
+```bash
+npm run zhihu:ask -- --title "问题标题" [--content "问题说明"] [--dry-run]
+```
+
+| 参数 | 说明 | 必填 |
+|------|------|------|
+| `--title` | 问题标题 | ✅ |
+| `--content` | 问题说明 / 补充内容（选填） | ❌ |
+| `--dry-run` | 预览模式，填写内容但不实际发布 | ❌ |
+
+<details>
+<summary>📌 示例</summary>
+
+```bash
+# 只填标题
+npm run zhihu:ask -- --title "如何看待 AI 对软件工程师职业的影响？"
+
+# 带问题说明
+npm run zhihu:ask -- \
+  --title "如何看待 AI 对软件工程师职业的影响？" \
+  --content "随着 LLM 和代码生成工具的普及，软件工程师的核心竞争力会发生哪些转变？"
+
+# Dry-run 预览
+npm run zhihu:ask -- --title "测试提问" --dry-run
+```
+
+</details>
+
+> 💡 操作流程：点击顶部「创作」按钮 → 下拉菜单选「提问题」→ 弹窗填写标题（必填）→ 等待说明框出现后填写说明（选填）→ 点击「发布问题」。
+
+---
+
+### 👥 关注 / 取消关注用户
+
+```bash
+npm run zhihu:follow -- --user "用户ID" [--unfollow] [--dry-run]
+```
+
+| 参数 | 说明 | 必填 |
+|------|------|------|
+| `--user` | 目标用户的知乎 URL ID（即 `zhihu.com/people/{user}` 中的部分） | ✅ |
+| `--unfollow` | 取消关注（不加此参数默认为关注） | ❌ |
+| `--dry-run` | 预览模式，打开用户主页但不实际点击 | ❌ |
+
+<details>
+<summary>📌 示例</summary>
+
+```bash
+# 关注用户
+npm run zhihu:follow -- --user "cai-jonathan"
+
+# 取消关注
+npm run zhihu:follow -- --user "cai-jonathan" --unfollow
+```
+
+</details>
+
+> 💡 幂等安全：关注时若已关注则跳过；取消关注时若本就未关注也跳过。
+
+---
+
+### 💬 评论回答
+
+```bash
+npm run zhihu:comment -- --url "回答URL" --content "评论内容" [--dry-run]
+```
+
+| 参数 | 说明 | 必填 |
+|------|------|------|
+| `--url` | 目标回答的完整 URL（`/question/xxx/answer/yyy` 格式） | ✅ |
+| `--content` | 评论内容 | ✅ |
+| `--dry-run` | 预览模式，填写内容但不实际发布 | ❌ |
+
+<details>
+<summary>📌 示例</summary>
+
+```bash
+npm run zhihu:comment -- \
+  --url "https://www.zhihu.com/question/1929952636016268030/answer/2004676372434547404" \
+  --content "非常有见地的回答，受益匪浅！"
+
+# Dry-run 预览
+npm run zhihu:comment -- --url "..." --content "测试评论" --dry-run
+```
+
+</details>
+
+> 💡 操作流程：打开回答页 → 点击「X 条评论」按钮展开评论区 → 点击顶部输入框 → 输入内容 → 点击「发布」。
+
+---
+
+### 👍 赞同回答
+
+```bash
+npm run zhihu:upvote -- --url "回答URL" [--dry-run]
+```
+
+| 参数 | 说明 | 必填 |
+|------|------|------|
+| `--url` | 目标回答的完整 URL（`/question/xxx/answer/yyy` 格式） | ✅ |
+| `--dry-run` | 预览模式，打开页面但不实际点击赞同 | ❌ |
+
+<details>
+<summary>📌 示例</summary>
+
+```bash
+npm run zhihu:upvote -- \
+  --url "https://www.zhihu.com/question/1979609139266213083/answer/2001327186213360634"
+```
+
+</details>
+
+> 💡 幂等安全：若该回答已赞同（按钮含 `VoteButton--up` class），则自动跳过，不会重复点击。
+
+---
+
 ## 百度知道（Zhidao）
 
 ### 🔐 保存登录状态
@@ -521,7 +643,11 @@ web-automation/
 │       │   ├── SearchPage.ts
 │       │   ├── QuestionPage.ts
 │       │   ├── ArticlePage.ts
-│       │   └── WaitingPage.ts
+│       │   ├── WaitingPage.ts
+│       │   ├── AskPage.ts
+│       │   ├── FollowPage.ts
+│       │   ├── CommentPage.ts
+│       │   └── UpvotePage.ts
 │       └── zhidao/            # 百度知道页面实现
 │           ├── BasePage.ts
 │           ├── LoginPage.ts
@@ -539,6 +665,36 @@ web-automation/
 ├── package.json
 └── tsconfig.json
 ```
+
+---
+
+## 📋 指令速查
+
+### 知乎（Zhihu）
+
+| 指令 | 说明 | 关键参数 |
+|------|------|----------|
+| `npm run zhihu:save-session` | 保存登录状态 | — |
+| `npm run zhihu:search` | 搜索问题 | `--keyword` `--count` |
+| `npm run zhihu:answer` | 发布回答 | `--url` / `--keyword`，`--content` |
+| `npm run zhihu:article` | 发布专栏文章 | `--title` `--content` `--cover` `--topic` `--column` |
+| `npm run zhihu:waiting` | 等你来答列表 | `--type` `--count` |
+| `npm run zhihu:ask` | 发起提问 | `--title` `--content` |
+| `npm run zhihu:follow` | 关注 / 取消关注用户 | `--user` `--unfollow` |
+| `npm run zhihu:comment` | 评论回答 | `--url` `--content` |
+| `npm run zhihu:upvote` | 赞同回答 | `--url` |
+
+### 百度知道（Zhidao）
+
+| 指令 | 说明 | 关键参数 |
+|------|------|----------|
+| `npm run zhidao:save-session` | 保存登录状态 | — |
+| `npm run zhidao:search` | 搜索问题 | `--keyword` `--count` |
+| `npm run zhidao:answer` | 回答问题 | `--url` / `--keyword`，`--content` |
+| `npm run zhidao:ask` | 发起提问 | `--title` `--description` `--anonymous` |
+| `npm run zhidao:recommendquestion` | 为我推荐问题列表 | `--keyword` `--count` |
+
+> 所有指令均支持 `--dry-run` 参数，用于预览操作流程而不实际提交。
 
 ---
 
